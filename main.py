@@ -14,13 +14,22 @@ app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'default_secret_key_cha
 app.register_blueprint(reservation_bp, url_prefix="/api/reservations")
 app.register_blueprint(chat_bp, url_prefix="/api/chat")
 app.register_blueprint(whatsapp_bp, url_prefix="/api/whatsapp")
-# Database configuration using PostgreSQL
-db_user = os.getenv('DB_USER', 'pila_user')
-db_password = os.getenv('DB_PASSWORD', 'pila_password')
-db_host = os.getenv('DB_HOST', 'localhost')
-db_port = os.getenv('DB_PORT', '5432')
-db_name = os.getenv('DB_NAME', 'pila_reservations')
-app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+# Database configuration - Prioritize DATABASE_URL from Render environment
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    # Adjust URL for SQLAlchemy if needed (Render uses postgres://, SQLAlchemy needs postgresql://)
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+else:
+    # Fallback for local development (using individual variables)
+    db_user = os.getenv("DB_USER", "pila_user")
+    db_password = os.getenv("DB_PASSWORD", "pila_password")
+    db_host = os.getenv("DB_HOST", "localhost")
+    db_port = os.getenv("DB_PORT", "5432")
+    db_name = os.getenv("DB_NAME", "pila_reservations")
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 with app.app_context():
